@@ -1,5 +1,4 @@
 <img width="1905" height="895" alt="Screenshot 2026-04-29 153926" src="https://github.com/user-attachments/assets/d2132428-66ce-4b49-9b13-f4f0bc95d011" /># Smart-Garbage-Management
-[3:40 pm, 29/04/2026] Visnu SNPSU: Project Description
 
 The Smart Garbage Reporting System is a web-based application designed to improve waste management in urban areas. It allows users to report garbage issues by uploading images and sharing their live location.
 
@@ -107,13 +106,16 @@ Username: worker
 Password: 1234
 
 📸 Screenshots
+<img width="1912" height="909" alt="Screenshot 2026-04-29 153515" src="https://github.com/user-attachments/assets/45c1b6fc-3c78-43a2-a7f6-d8997900f4e1" />
+<img width="1894" height="786" alt="Screenshot 2026-04-29 153533" src="https://github.com/user-attachments/assets/b146541a-a33f-4b20-923b-76dafb67d902" />
+<img width="1893" height="857" alt="Screenshot 2026-04-29 153548" src="https://github.com/user-attachments/assets/6a2bcdd8-28ff-4ddd-beff-ca8c9cf8a57a" />
+<img width="1893" height="896" alt="Screenshot 2026-04-29 153700" src="https://github.com/user-attachments/assets/8f3f4252-7e3b-46fd-b635-e18b72ecfa69" />
+<img width="1905" height="895" alt="Screenshot 2026-04-29 153926" src="https://github.com/user-attachments/assets/487ad33f-aca5-4b0f-b28d-d3fffd956c1a" />
 
-![Uploading Screenshot 2026-04-29 153926.png…]()
 
 
 
 
-<img width="1912" height="909" alt="Screenshot 2026-04-29 153515" src="https://github.com/user-attachments/assets/c60e3a11-00aa-41fe-ae1b-6d7bf8d9d7b8" />
 
 
 🌐 Live Demo
