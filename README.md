@@ -119,7 +119,7 @@ Password: 1234
 
 
 🌐 Live Demo
-
+https://smartgarbage-reportingsystem.netlify.app/
 
 
 🔮 Future Scope
