@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Garbage Management - Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .preview-img { max-height: 340px; object-fit: cover; border-radius: 20px; }
+    #locationMap { height: 300px; border-radius: 16px; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+
+  <!-- Login -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-700 to-teal-800">
+    <div class="bg-zinc-900 rounded-3xl p-10 w-full max-w-md">
+      <div class="flex justify-center mb-8">
+        <div class="w-20 h-20 bg-emerald-500 rounded-3xl flex items-center justify-center text-5xl">♻️</div>
+      </div>
+      <h1 class="text-4xl font-bold text-center">Smart Garbage Management</h1>
+      <p class="text-emerald-400 text-center mt-2">Bengaluru Smart City</p>
+
+      <div class="mt-10 space-y-6">
+        <input id="userId" type="text" placeholder="User ID (citizen)" class="w-full px-6 py-4 bg-zinc-800 rounded-3xl text-lg" value="citizen"/>
+        <input id="password" type="password" placeholder="Password" class="w-full px-6 py-4 bg-zinc-800 rounded-3xl text-lg" value="123456"/>
+        <button onclick="login()" class="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xl rounded-3xl">Login as Citizen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Citizen App -->
+  <div id="mainApp" class="hidden">
+    <header class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50 px-8 py-6 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="text-3xl">♻️</div>
+        <div><h1 class="text-2xl font-bold">Smart Garbage Management</h1><p class="text-emerald-400 text-sm">Report Waste</p></div>
+      </div>
+      <button onclick="logout()" class="px-6 py-3 bg-zinc-800 hover:bg-red-600 rounded-3xl">Logout</button>
+    </header>
+
+    <div class="max-w-5xl mx-auto px-8 py-12">
+      <h2 class="text-4xl font-bold mb-10">Report Garbage Dump</h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div class="bg-zinc-900 rounded-3xl p-10">
+          <div class="space-y-8">
+            <!-- Photo Section -->
+            <div>
+              <label class="block text-zinc-400 mb-3">Photo of Garbage</label>
+              <div class="flex gap-4">
+                <button type="button" onclick="openCamera" class="flex-1 py-6 bg-zinc-800 hover:bg-zinc-700 rounded-3xl flex flex-col items-center gap-2 transition-all">
+                  <i class="fa-solid fa-camera text-3xl"></i>
+                  <span class="text-sm font-medium">Open Camera</span>
+                </button>
+                <button onclick="document.getElementById('fileInput').click()" class="flex-1 py-6 bg-zinc-800 hover:bg-zinc-700 rounded-3xl flex flex-col items-center gap-2 transition-all">
+                  <i class="fa-solid fa-image text-3xl"></i>
+                  <span class="text-sm font-medium">Upload from Gallery</span>
+                </button>
+              </div>
+              <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)"/>
+              <img id="imagePreview" class="preview-img hidden w-full mt-6"/>
+            </div>
+
+            <!-- Location -->
+            <div>
+              <label class="block text-zinc-400 mb-3">Location</label>
+              <div class="flex gap-3 mb-4">
+                <button onclick="startRealTimeGPS()" class="flex-1 py-5 bg-emerald-600 hover:bg-emerald-700 rounded-3xl flex items-center justify-center gap-2 font-medium">
+                  <i class="fa-solid fa-satellite"></i> Real-time GPS
+                </button>
+                <button onclick="showMapPicker()" class="flex-1 py-5 bg-zinc-800 hover:bg-zinc-700 rounded-3xl flex items-center justify-center gap-2 font-medium">
+                  <i class="fa-solid fa-map-marker-alt"></i> Mark on Map
+                </button>
+              </div>
+              <input id="manualLocation" type="text" placeholder="Enter location manually" 
+                class="w-full px-6 py-5 bg-zinc-800 border border-zinc-700 rounded-3xl"/>
+              <div id="locationDisplay" class="mt-4 text-sm text-emerald-400"></div>
+              <div id="locationMapContainer" class="hidden mt-4">
+                <div id="locationMap" class="h-72 rounded-2xl"></div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-zinc-400 mb-3">Description</label>
+              <textarea id="description" rows="4" class="w-full px-6 py-5 bg-zinc-800 rounded-3xl focus:border-emerald-500" placeholder="Describe the garbage..."></textarea>
+            </div>
+
+            <button onclick="submitReport()" class="w-full py-6 bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xl rounded-3xl">Submit Report</button>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900 rounded-3xl p-10">
+          <h3 class="font-semibold text-xl mb-6">Priority Analysis</h3>
+          <div id="priorityDisplay" class="p-10 rounded-3xl border border-zinc-700 text-center min-h-[180px] text-zinc-400">
+            Submit photo & location for analysis
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let currentUser = null, imageBase64 = null, currentLat = null, currentLng = null;
+    let locationMap = null, locationMarker = null;
+    let watchId = null;
+
+    function login() {
+      currentUser = { name: "Suraj" };
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("mainApp").classList.remove("hidden");
+    }
+
+    function logout() {
+      document.getElementById("mainApp").classList.add("hidden");
+      document.getElementById("loginScreen").classList.remove("hidden");
+    }
+
+    function openCamera() {
+      const input = document.getElementById("fileInput");
+      input.capture = "environment";   // This forces camera on mobile
+      input.click();
+    }
+
+    function previewImage(e) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        imageBase64 = ev.target.result;
+        document.getElementById("imagePreview").src = imageBase64;
+        document.getElementById("imagePreview").classList.remove("hidden");
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+
+    function startRealTimeGPS() {
+      const display = document.getElementById("locationDisplay");
+      display.innerHTML = "Fetching GPS...";
+
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          currentLat = pos.coords.latitude;
+          currentLng = pos.coords.longitude;
+          display.innerHTML = `📍 Live GPS: ${currentLat.toFixed(5)}, ${currentLng.toFixed(5)}`;
+        },
+        (err) => display.innerHTML = "Failed to get GPS. Please allow permission."
+      );
+    }
+
+    function showMapPicker() {
+      const container = document.getElementById("locationMapContainer");
+      container.classList.remove("hidden");
+
+      if (!locationMap) {
+        locationMap = L.map('locationMap').setView([12.9716, 77.5946], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(locationMap);
+
+        locationMap.on('click', (e) => {
+          currentLat = e.latlng.lat;
+          currentLng = e.latlng.lng;
+          if (locationMarker) locationMap.removeLayer(locationMarker);
+          locationMarker = L.marker([currentLat, currentLng]).addTo(locationMap);
+          document.getElementById("locationDisplay").innerHTML = `📍 Marked: ${currentLat.toFixed(5)}, ${currentLng.toFixed(5)}`;
+        });
+      }
+    }
+
+    function submitReport() {
+      if (!imageBase64) return alert("Please take or upload a photo");
+
+      const manualLoc = document.getElementById("manualLocation").value.trim();
+      if (!currentLat && !manualLoc) return alert("Please select location using GPS or Map");
+
+      const locationText = manualLoc || `Live GPS: ${currentLat?.toFixed(5)}, ${currentLng?.toFixed(5)}`;
+
+      const report = {
+        id: "TG-" + Date.now().toString().slice(-6),
+        image: imageBase64,
+        description: document.getElementById("description").value || "Garbage reported",
+        location: locationText,
+        lat: currentLat,
+        lng: currentLng,
+        priority: "medium",
+        status: "reported",
+        timeline: [{ status: "reported", time: new Date().toLocaleString(), note: "Submitted" }],
+        time: new Date().toLocaleString()
+      };
+
+      let reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+      reports.unshift(report);
+      localStorage.setItem("trashReports", JSON.stringify(reports));
+
+      alert("✅ Report submitted successfully!");
+      // Reset form
+      document.getElementById("description").value = "";
+      document.getElementById("manualLocation").value = "";
+      document.getElementById("imagePreview").classList.add("hidden");
+      document.getElementById("locationDisplay").innerHTML = "";
+      document.getElementById("locationMapContainer").classList.add("hidden");
+      imageBase64 = currentLat = currentLng = null;
+    }
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Garbage Management - Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .report-img { height: 220px; object-fit: cover; border-radius: 16px; }
+    .nav-active { background-color: #10b981; color: white; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+
+<div class="flex h-screen">
+  <div class="w-72 bg-zinc-900 border-r border-zinc-800 p-6 flex flex-col">
+    <div class="flex items-center gap-4 mb-12">
+      <div class="text-4xl">♻️</div>
+      <div><h1 class="text-3xl font-bold">Smart Garbage Management</h1><p class="text-emerald-400">Admin Portal</p></div>
+    </div>
+    <nav class="flex-1 space-y-2">
+      <a onclick="switchTab(0)" id="nav-0" class="nav-active flex items-center gap-4 px-6 py-5 cursor-pointer"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a onclick="switchTab(1)" id="nav-1" class="flex items-center gap-4 px-6 py-5 hover:bg-zinc-800 rounded-3xl cursor-pointer"><i class="fa-solid fa-map"></i> Live Map</a>
+      <a onclick="switchTab(2)" id="nav-2" class="flex items-center gap-4 px-6 py-5 hover:bg-zinc-800 rounded-3xl cursor-pointer"><i class="fa-solid fa-list-check"></i> All Reports</a>
+      <a onclick="switchTab(3)" id="nav-3" class="flex items-center gap-4 px-6 py-5 hover:bg-zinc-800 rounded-3xl cursor-pointer"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+    </nav>
+  </div>
+
+  <div class="flex-1 overflow-auto">
+    <!-- Dashboard -->
+    <div id="tab-0" class="p-10">
+      <h1 class="text-4xl font-bold mb-2">Dashboard Overview</h1>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-zinc-900 rounded-3xl p-8"><p class="text-zinc-400">Total Reports</p><p id="totalReports" class="text-6xl font-bold mt-4">0</p></div>
+        <div class="bg-zinc-900 rounded-3xl p-8"><p class="text-zinc-400">High Priority</p><p id="highPriority" class="text-6xl font-bold mt-4 text-red-400">0</p></div>
+        <div class="bg-zinc-900 rounded-3xl p-8"><p class="text-zinc-400">Pending</p><p id="pendingCount" class="text-6xl font-bold mt-4 text-amber-400">0</p></div>
+        <div class="bg-zinc-900 rounded-3xl p-8"><p class="text-zinc-400">Resolved</p><p id="resolvedToday" class="text-6xl font-bold mt-4 text-emerald-400">0</p></div>
+      </div>
+    </div>
+
+    <!-- Live Map -->
+    <div id="tab-1" class="hidden flex flex-col h-full">
+      <header class="bg-zinc-900 border-b border-zinc-800 px-10 py-7 flex justify-between">
+        <h1 class="text-3xl font-semibold">Live Map - Vehicle Tracking</h1>
+        <button onclick="refreshLiveMap()" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-4 rounded-3xl">Refresh</button>
+      </header>
+      <div class="flex-1 p-8">
+        <div id="liveMap" class="h-full rounded-3xl border border-zinc-800"></div>
+      </div>
+    </div>
+
+    <!-- All Reports -->
+    <div id="tab-2" class="hidden p-10">
+      <h1 class="text-3xl font-semibold mb-8">All Reports</h1>
+      <div id="allReportsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+    </div>
+
+    <!-- Analytics -->
+    <div id="tab-3" class="hidden p-10">
+      <h1 class="text-3xl font-semibold mb-10">Analytics & Insights</h1>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-zinc-900 rounded-3xl p-8"><canvas id="priorityChart" height="300"></canvas></div>
+        <div class="bg-zinc-900 rounded-3xl p-8"><canvas id="zoneChart" height="300"></canvas></div>
+        <div class="bg-zinc-900 rounded-3xl p-8 lg:col-span-2"><canvas id="trendChart" height="140"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  let liveMapInstance = null;
+  let vehicleMarker = {};
+  let priorityChart, zoneChart, trendChart;
+
+  const vehicles = [
+    { id: "KA02-AB-4567", driver: "Ramesh Kumar", phone: "9845012345" },
+    { id: "KA02-CD-8921", driver: "Suresh Patil", phone: "9845019876" },
+    { id: "KA02-EF-3344", driver: "Mahesh Rao", phone: "9845023456" }
+  ];
+
+  function switchTab(tab) {
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+    document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
+    document.getElementById(`nav-${tab}`).classList.add('nav-active');
+
+    if (tab === 1) initLiveMap();
+    if (tab === 2) loadAllReports();
+    if (tab === 3) renderAnalytics();
+    if (tab === 0) updateStats();
+  }
+
+  function updateStats() {
+    const reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+    document.getElementById("totalReports").textContent = reports.length;
+    document.getElementById("highPriority").textContent = reports.filter(r => r.priority === "high").length;
+    document.getElementById("pendingCount").textContent = reports.filter(r => r.status !== "completed").length;
+    document.getElementById("resolvedToday").textContent = reports.filter(r => r.status === "completed").length;
+  }
+
+  function initLiveMap() {
+    if (liveMapInstance) return;
+    liveMapInstance = L.map('liveMap').setView([12.9716, 77.5946], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(liveMapInstance);
+  }
+
+  function loadAllReports() {
+    const reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+    const container = document.getElementById("allReportsContainer");
+    container.innerHTML = "";
+
+    reports.forEach((report, index) => {
+      const isCompleted = report.status === "completed";
+      const card = document.createElement("div");
+      card.className = `bg-zinc-900 rounded-3xl overflow-hidden border ${isCompleted ? 'border-emerald-500' : 'border-zinc-800'}`;
+
+      card.innerHTML = `
+        <img src="${report.image}" class="report-img w-full"/>
+        <div class="p-6">
+          <div class="flex justify-between mb-4">
+            <span class="font-mono">${report.id}</span>
+            <span class="px-5 py-1 text-xs font-bold rounded-2xl ${report.priority === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}">
+              ${report.priority.toUpperCase()}
+            </span>
+          </div>
+          <p class="font-medium">${report.description}</p>
+          <p class="text-sm text-zinc-400">${report.location}</p>
+
+          ${isCompleted ? `
+            <div class="mt-6 inline-flex items-center gap-2 text-emerald-400">
+              <i class="fa-solid fa-circle-check"></i> Completed
+            </div>
+          ` : `
+            <select id="veh-${report.id}" class="w-full mt-6 bg-zinc-800 border border-zinc-700 rounded-2xl py-3 px-4 text-sm">
+              <option value="">Select KA02 Vehicle</option>
+              ${vehicles.map(v => `<option value="${v.id}">${v.id} - ${v.driver}</option>`).join('')}
+            </select>
+          `}
+
+          <div class="grid grid-cols-2 gap-4 mt-6">
+            ${isCompleted ? 
+              `<button class="py-4 bg-emerald-500/20 text-emerald-400 rounded-2xl">Completed</button>` : 
+              `<button onclick="assignVehicle(${index})" class="py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl">Assign Vehicle</button>`
+            }
+            <button onclick="markPickedUp(${index})" class="py-4 ${isCompleted ? 'bg-zinc-700' : 'bg-emerald-600 hover:bg-emerald-500'} rounded-2xl">
+              ${isCompleted ? 'Picked Up' : 'Mark Picked Up'}
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function assignVehicle(index) {
+    const reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+    const report = reports[index];
+    const select = document.getElementById(`veh-${report.id}`);
+    const vehicleId = select.value;
+
+    if (!vehicleId) return alert("Please select a vehicle");
+
+    if (!report.timeline) report.timeline = [];
+    report.timeline.push({
+      status: "vehicle_assigned",
+      time: new Date().toLocaleString(),
+      note: `Assigned ${vehicleId}`
+    });
+
+    localStorage.setItem("trashReports", JSON.stringify(reports));
+
+    alert(`Vehicle ${vehicleId} assigned! Check Live Map.`);
+
+    // Animate vehicle on map
+    if (liveMapInstance && report.lat && report.lng) {
+      if (vehicleMarker) liveMapInstance.removeLayer(vehicleMarker);
+      vehicleMarker = L.marker([report.lat, report.lng], {
+        icon: L.divIcon({ className: 'truck-icon', html: '🚛' })
+      }).addTo(liveMapInstance);
+
+      let offset = 0;
+      const interval = setInterval(() => {
+        offset += 0.005;
+        vehicleMarker.setLatLng([report.lat + offset, report.lng + offset * 0.7]);
+        if (offset > 0.04) clearInterval(interval);
+      }, 80);
+    }
+
+    loadAllReports();
+  }
+
+  function markPickedUp(index) {
+    const reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+    const report = reports[index];
+
+    if (!report.timeline) report.timeline = [];
+    report.timeline.push({
+      status: "picked_up",
+      time: new Date().toLocaleString(),
+      note: "Garbage successfully picked up"
+    });
+    report.status = "completed";
+
+    localStorage.setItem("trashReports", JSON.stringify(reports));
+
+    alert(`🎉 GARBAGE PICKED UP!\nReport ID: ${report.id}`);
+
+    loadAllReports();
+    updateStats();
+  }
+
+  function renderAnalytics() {
+    const reports = JSON.parse(localStorage.getItem("trashReports") || "[]");
+
+    if (priorityChart) priorityChart.destroy();
+    priorityChart = new Chart(document.getElementById('priorityChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['High', 'Medium'],
+        datasets: [{ data: [reports.filter(r => r.priority === 'high').length, reports.filter(r => r.priority === 'medium').length], backgroundColor: ['#ef4444', '#f59e0b'] }]
+      }
+    });
+
+    if (zoneChart) zoneChart.destroy();
+    zoneChart = new Chart(document.getElementById('zoneChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Koramangala', 'Indiranagar', 'HSR Layout', 'JP Nagar'],
+        datasets: [{ label: 'Reports', data: [15, 22, 18, 12], backgroundColor: '#10b981' }]
+      }
+    });
+
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{ label: 'Reports', data: [12, 18, 25, 22, 30, 28, 35], borderColor: '#34d399', tension: 0.4 }]
+      }
+    });
+  }
+
+  window.onload = () => {
+    switchTab(0);
+  };
+</script>
+</body>
+</html>
