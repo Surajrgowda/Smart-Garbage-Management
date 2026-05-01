@@ -119,7 +119,7 @@ Password: 1234
 
 
 🌐 Live Demo
-https://smartgarbage-reportingsystem.netlify.app/
+[https://smartgarbage-reportingsystem.netlify.app/](https://tubular-druid-2f3600.netlify.app/)
 
 
 🔮 Future Scope
